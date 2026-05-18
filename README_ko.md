@@ -161,7 +161,7 @@ module.exports.hello = async (event) => {
 4. 코드 탭에 위 핸들러 코드 붙여넣기
 5. **배포** → **테스트** 실행
 
-![Lambda 함수 생성 결과](image-1.png)
+![Lambda 함수 생성 결과](docs/images/image-1.png)
 
 ### AWS CLI 배포
 
@@ -461,16 +461,16 @@ functions:
    https://<API_ID>.execute-api.ap-northeast-2.amazonaws.com/dev/hello?name=Alice
    ```
 
-![API Gateway 설정 화면](image.png)
-![Lambda 함수 연결](image-2.png)
-![Lambda 함수 연결 상세](image-3.png)
-![리소스 생성](image-5.png)
-![메서드 생성 입력](image-8.png)
-![메서드 생성 확인](image-9.png)
-![GET 메서드 Lambda 통합](image-10.png)
-![배포 URL 확인](image-11.png)
-![스테이지 생성](image-12.png)
-![재배포](image-13.png)
+![API Gateway 설정 화면](docs/images/image.png)
+![Lambda 함수 연결](docs/images/image-2.png)
+![Lambda 함수 연결 상세](docs/images/image-3.png)
+![리소스 생성](docs/images/image-5.png)
+![메서드 생성 입력](docs/images/image-8.png)
+![메서드 생성 확인](docs/images/image-9.png)
+![GET 메서드 Lambda 통합](docs/images/image-10.png)
+![배포 URL 확인](docs/images/image-11.png)
+![스테이지 생성](docs/images/image-12.png)
+![재배포](docs/images/image-13.png)
 
 ### 방법 B — AWS CLI
 
@@ -541,8 +541,8 @@ User ... is not authorized to perform: cloudformation:CreateChangeSet
 ```
 **해결:** IAM → 사용자 → 권한 → `AWSCloudFormationFullAccess` 정책 추가
 
-![CloudFormation 권한 추가](image-15.png)
-![정책 확인](image-16.png)
+![CloudFormation 권한 추가](docs/images/image-15.png)
+![정책 확인](docs/images/image-16.png)
 
 ### API Gateway 권한 오류
 ```
@@ -550,8 +550,8 @@ User ... is not authorized to perform: cloudformation:CreateChangeSet
 ```
 **해결:** `AmazonAPIGatewayAdministrator` 정책 추가
 
-![API Gateway 권한](image-17.png)
-![API Gateway 권한 상세](image-18.png)
+![API Gateway 권한](docs/images/image-17.png)
+![API Gateway 권한 상세](docs/images/image-18.png)
 
 ### CloudFormation 스택 롤백 오류
 ```
@@ -562,9 +562,9 @@ Stack ... is in UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS state
 aws cloudformation delete-stack --stack-name hello-api-dev
 ```
 
-![스택 에러](image-19.png)
-![삭제 성공](image-20.png)
-![삭제 실패 시 전체 삭제](image-21.png)
+![스택 에러](docs/images/image-19.png)
+![삭제 성공](docs/images/image-20.png)
+![삭제 실패 시 전체 삭제](docs/images/image-21.png)
 
 ### CloudWatch Logs 권한 오류
 ```
@@ -573,13 +573,13 @@ An additional permission "logs:TagResource" is required.
 ```
 **해결:** `logs:TagResource` 권한이 포함된 커스텀 정책 추가
 
-![CloudWatch Logs 권한 오류](image-22.png)
-![권한 추가](image-23.png)
-![권한 추가 상세](image-24.png)
-![정책 생성](image-25.png)
-![정책 생성 완료](image-29.png)
-![추가 설정 1](image-30.png)
-![추가 설정 2](image-31.png)
+![CloudWatch Logs 권한 오류](docs/images/image-22.png)
+![권한 추가](docs/images/image-23.png)
+![권한 추가 상세](docs/images/image-24.png)
+![정책 생성](docs/images/image-25.png)
+![정책 생성 완료](docs/images/image-29.png)
+![추가 설정 1](docs/images/image-30.png)
+![추가 설정 2](docs/images/image-31.png)
 
 ### Log Group 중복 오류
 ```
@@ -590,8 +590,8 @@ Resource of type 'AWS::Logs::LogGroup' ... already exists.
 aws logs delete-log-group --log-group-name /aws/lambda/<FUNCTION_NAME>
 ```
 
-![Log Group 중복](image-32.png)
-![완료 화면](image-33.png)
+![Log Group 중복](docs/images/image-32.png)
+![완료 화면](docs/images/image-33.png)
 
 ---
 
@@ -644,8 +644,8 @@ aws logs get-log-events \
   --log-stream-name <LOG_STREAM_NAME>
 ```
 
-![S3 버킷 생성](image-36.png)
-![CloudWatch Logs 조회](image-35.png)
+![S3 버킷 생성](docs/images/image-36.png)
+![CloudWatch Logs 조회](docs/images/image-35.png)
 
 ---
 
@@ -653,8 +653,8 @@ aws logs get-log-events \
 
 - AWS 공식 아키텍처 사례: https://aws.amazon.com/ko/architecture
 
-![Well-Architected 소개](image-37.png)
-![Well-Architected 참고](image-38.png)
+![Well-Architected 소개](docs/images/image-37.png)
+![Well-Architected 참고](docs/images/image-38.png)
 
 ---
 

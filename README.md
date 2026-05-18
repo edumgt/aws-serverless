@@ -147,7 +147,7 @@ module.exports.hello = async (event) => {
 4. Paste the handler code above into the inline editor.
 5. Save and **Test** the function.
 
-![Lambda 함수 생성 결과](image-1.png)
+![Lambda 함수 생성 결과](docs/images/image-1.png)
 
 ### Node.js CLI Deployment
 
@@ -448,10 +448,10 @@ functions:
    https://<API_ID>.execute-api.ap-northeast-2.amazonaws.com/dev/hello?name=Alice
    ```
 
-![API Gateway 설정 화면](image.png)  
-![Lambda 함수 연결](image-2.png)  
-![메서드 생성 입력](image-8.png)  
-![배포 URL 확인](image-11.png)
+![API Gateway 설정 화면](docs/images/image.png)  
+![Lambda 함수 연결](docs/images/image-2.png)  
+![메서드 생성 입력](docs/images/image-8.png)  
+![배포 URL 확인](docs/images/image-11.png)
 
 ### Option B — AWS CLI
 
@@ -520,7 +520,7 @@ User ... is not authorized to perform: cloudformation:CreateChangeSet
 ```
 **Fix:** Attach `AWSCloudFormationFullAccess` policy to the IAM user.
 
-![CloudFormation 권한 추가](image-15.png)
+![CloudFormation 권한 추가](docs/images/image-15.png)
 
 ### API Gateway permissions error
 ```
@@ -528,7 +528,7 @@ User ... is not authorized to perform: cloudformation:CreateChangeSet
 ```
 **Fix:** Attach `AmazonAPIGatewayAdministrator` policy.
 
-![API Gateway 권한](image-17.png)
+![API Gateway 권한](docs/images/image-17.png)
 
 ### CloudFormation stack in ROLLBACK state
 ```
@@ -538,7 +538,7 @@ Stack ... is in UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS state
 ```bash
 aws cloudformation delete-stack --stack-name hello-api-dev
 ```
-![스택 에러](image-19.png)
+![스택 에러](docs/images/image-19.png)
 
 ### CloudWatch Logs permissions error
 ```
@@ -546,7 +546,7 @@ aws cloudformation delete-stack --stack-name hello-api-dev
 ```
 **Fix:** Add a custom IAM policy with `logs:TagResource`.
 
-![CloudWatch Logs 권한 오류](image-22.png)
+![CloudWatch Logs 권한 오류](docs/images/image-22.png)
 
 ### Log Group AlreadyExists
 ```
