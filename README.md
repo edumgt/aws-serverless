@@ -481,8 +481,8 @@ Compress-Archive -Path index.js -DestinationPath function.zip
 ```bash
 aws lambda create-function \
   --function-name edumgt-lambda-nodejs \
-  --runtime nodejs20.x \
-  --role arn:aws:iam::<ACCOUNT_ID>:role/<ROLE_NAME> \
+  --runtime nodejs22.x \
+  --role arn:aws:iam::086015456585:role/lambda-test \
   --handler index.handler \
   --zip-file fileb://function.zip \
   --region ap-northeast-2
@@ -715,7 +715,7 @@ mvn package -q
 aws lambda create-function \
   --function-name edumgt-lambda-java \
   --runtime java17 \
-  --role arn:aws:iam::<ACCOUNT_ID>:role/<ROLE_NAME> \
+  --role arn:aws:iam::086015456585:role/lambda-test \
   --handler com.example.HelloHandler \
   --zip-file fileb://target/hello-lambda-1.0-SNAPSHOT.jar \
   --memory-size 512 \
@@ -826,7 +826,7 @@ aws apigateway put-method \
   --authorization-type NONE
 
 # 5. Lambda 프록시 통합 설정
-LAMBDA_ARN="arn:aws:lambda:ap-northeast-2:<ACCOUNT_ID>:function:edumgt-lambda-nodejs"
+LAMBDA_ARN="arn:aws:lambda:ap-northeast-2:086015456585:function:hello-api-dev-hello"
 aws apigateway put-integration \
   --rest-api-id $API_ID \
   --resource-id $RESOURCE_ID \
@@ -837,18 +837,18 @@ aws apigateway put-integration \
 
 # 6. API Gateway의 Lambda 호출 권한 부여
 aws lambda add-permission \
-  --function-name edumgt-lambda-nodejs \
+  --function-name hello-api-dev-hello \
   --statement-id apigateway-invoke \
   --action lambda:InvokeFunction \
   --principal apigateway.amazonaws.com \
-  --source-arn "arn:aws:execute-api:ap-northeast-2:<ACCOUNT_ID>:${API_ID}/*/*"
+  --source-arn "arn:aws:execute-api:ap-northeast-2:086015456585:${API_ID}/*/*"
 
 # 7. 스테이지 배포
 aws apigateway create-deployment \
   --rest-api-id $API_ID \
   --stage-name dev
 
-echo "엔드포인트: https://${API_ID}.execute-api.ap-northeast-2.amazonaws.com/dev/hello"
+echo "엔드포인트: https://c8wy9s5c3m.execute-api.ap-northeast-2.amazonaws.com/dev/hello"
 ```
 
 ### 방법 C — Serverless Framework (자동)
@@ -1177,3 +1177,26 @@ aws lambda add-permission \
 
 ![Well-Architected 소개](docs/images/image-37.png)
 ![Well-Architected 참고](docs/images/image-38.png)
+
+
+---
+
+### RDS 연동
+
+```bash
+mysql -h database-edumgt.cg0ugoglztrn.ap-northeast-2.rds.amazonaws.com -P 3306 -u root -p --ssl-mode=VERIFY_IDENTITY --ssl-ca=./global-bundle.pem
+```
+---
+
+```bash
+curl -X POST https://qri7el2x7z4ym4zowsk3go5uey0bjmti.lambda-url.ap-northeast-2.on.aws/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "홍길동",
+    "password": "mypassword",
+    "phone": "010-1234-5678",
+    "email": "hong@example.com"
+  }'
+```
+
+![alt text](image.png)

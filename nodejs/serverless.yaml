@@ -1,14 +1,48 @@
-service: hello-api
+service: users
 
 provider:
   name: aws
   runtime: nodejs18.x
   region: ap-northeast-2
+  apiName: users
+  timeout: 15
+  environment:
+    DB_HOST: database-edumgt.cg0ugoglztrn.ap-northeast-2.rds.amazonaws.com
+    DB_PORT: "3306"
+    DB_NAME: edumgt
+    DB_USER: root
+    DB_PASSWORD: "12345678"
+    DB_SSL_CA: /var/task/global-bundle.pem
+  vpc:
+    securityGroupIds:
+      - sg-0bedcb8532652739e
+    subnetIds:
+      - subnet-0ee28f62c97f2d15a
+      - subnet-046ec7e3f7cfbe468
+      - subnet-0b7dcd7ba9c6836c0
+      - subnet-0e2477b05fd0f0fea
 
 functions:
-  hello:
-    handler: handler.hello
+  usersApi:
+    handler: handler.usersApi
     events:
       - http:
-          path: hello
+          path: users
           method: get
+          cors: true
+      - http:
+          path: users
+          method: post
+          cors: true
+      - http:
+          path: users/{id}
+          method: get
+          cors: true
+      - http:
+          path: users/{id}
+          method: put
+          cors: true
+      - http:
+          path: users/{id}
+          method: delete
+          cors: true

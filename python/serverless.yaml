@@ -4,6 +4,8 @@ provider:
   name: aws
   runtime: python3.12
   region: ap-northeast-2
+  environment:
+    AUTH_TOKEN: edumgt-secret-token
 
 functions:
   hello:
@@ -13,3 +15,9 @@ functions:
           path: hello
           method: get
           cors: true
+
+  authorizer:
+    handler: authorizer.authorize
+    description: "TOKEN Authorizer for users REST API (oir11z21f5)"
+    environment:
+      AUTH_TOKEN: edumgt-secret-token
