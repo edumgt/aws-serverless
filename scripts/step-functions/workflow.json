@@ -1,0 +1,149 @@
+{
+  "Comment": "주가 데이터 파이프라인 워크플로우 (수집 → 정제 → AI/ML 분석)",
+  "StartAt": "Step1_CollectData",
+  "States": {
+
+    "Step1_CollectData": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::batch:submitJob.sync",
+      "Parameters": {
+        "JobName.$": "States.Format('collect-{}', $$.Execution.Name)",
+        "JobQueue": "${BATCH_JOB_QUEUE}",
+        "JobDefinition": "${BATCH_JOB_DEF_COLLECT}",
+        "ContainerOverrides": {
+          "Environment": [
+            {"Name": "TARGET_DATE", "Value.$": "$.target_date"},
+            {"Name": "S3_RAW_BUCKET", "Value": "${S3_RAW_BUCKET}"}
+          ]
+        }
+      },
+      "ResultPath": "$.collect_result",
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "NotifyFailure",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "Step2_RefineData"
+    },
+
+    "Step2_RefineData": {
+      "Type": "Parallel",
+      "Comment": "Batch 정제 + Glue ETL 병렬 실행",
+      "Branches": [
+        {
+          "StartAt": "RunBatchRefine",
+          "States": {
+            "RunBatchRefine": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::batch:submitJob.sync",
+              "Parameters": {
+                "JobName.$": "States.Format('refine-batch-{}', $$.Execution.Name)",
+                "JobQueue": "${BATCH_JOB_QUEUE}",
+                "JobDefinition": "${BATCH_JOB_DEF_REFINE}",
+                "ContainerOverrides": {
+                  "Environment": [
+                    {"Name": "TARGET_DATE", "Value.$": "$.target_date"}
+                  ]
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "RunGlueETL",
+          "States": {
+            "RunGlueETL": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "${GLUE_JOB}",
+                "Arguments": {
+                  "--TARGET_DATE.$": "$.target_date",
+                  "--S3_RAW_BUCKET": "${S3_RAW_BUCKET}",
+                  "--S3_PROCESSED_BUCKET": "${S3_PROCESSED_BUCKET}"
+                }
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "ResultPath": "$.refine_result",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "NotifyFailure",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "Step3_MLAnalysis"
+    },
+
+    "Step3_MLAnalysis": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sagemaker:startPipelineExecution.sync",
+      "Parameters": {
+        "PipelineName": "${SAGEMAKER_PIPELINE}",
+        "PipelineExecutionDisplayName.$": "States.Format('exec-{}', $$.Execution.Name)",
+        "PipelineParameters": [
+          {
+            "Name": "TargetDate",
+            "Value.$": "$.target_date"
+          }
+        ]
+      },
+      "ResultPath": "$.ml_result",
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 60,
+          "MaxAttempts": 1,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "NotifyFailure",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "PipelineSuccess"
+    },
+
+    "PipelineSuccess": {
+      "Type": "Succeed",
+      "Comment": "파이프라인 성공적으로 완료"
+    },
+
+    "NotifyFailure": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${SNS_ALERT_TOPIC}",
+        "Message": {
+          "Input.$": "States.JsonToString($)"
+        },
+        "Subject": "주가 파이프라인 실패 알림"
+      },
+      "Next": "PipelineFailed"
+    },
+
+    "PipelineFailed": {
+      "Type": "Fail",
+      "Error": "PipelineExecutionFailed",
+      "Cause": "파이프라인 단계 중 오류 발생"
+    }
+  }
+}

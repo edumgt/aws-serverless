@@ -19,6 +19,10 @@
 
 1. [기술 스택](#기술-스택)
 2. [아키텍처](#아키텍처)
+   - [주가 데이터 AI/ML 파이프라인](#주가-데이터-aiml-파이프라인-stock-pipeline)
+   - [API Gateway + Lambda](#api-gateway--lambda-hello-api)
+   - [S3 이벤트 트리거 + Lambda](#s3-이벤트-트리거--lambda)
+   - [GitHub Actions 배포 파이프라인](#github-actions-배포-파이프라인)
 3. [디렉터리 구조](#디렉터리-구조)
 4. [사전 준비](#사전-준비)
 5. [AWS CLI 설치 및 설정](#aws-cli-설치-및-설정)
@@ -135,6 +139,106 @@
                                                  │  CloudWatch Logs │
                                                  └──────────────────┘
 ```
+
+### 주가 데이터 AI/ML 파이프라인 (Stock Pipeline)
+
+```mermaid
+flowchart TD
+    EB["⏰ EventBridge Scheduler<br/>매일 16:00 KST<br/>장 마감 후 자동 트리거"]
+
+    subgraph SFN["AWS Step Functions — 워크플로우 제어"]
+        direction TB
+
+        subgraph S1["Step 1 · 수집"]
+            BC["AWS Batch<br/>Collect Job<br/>(Fargate)"]
+        end
+
+        subgraph S2["Step 2 · 정제 (병렬)"]
+            direction LR
+            BR["AWS Batch<br/>Refine Job<br/>(Fargate)"]
+            GL["AWS Glue<br/>ETL Job<br/>(Spark)"]
+        end
+
+        subgraph S3["Step 3 · AI/ML 분석"]
+            SM["Amazon SageMaker<br/>ML Pipeline<br/>(XGBoost)"]
+        end
+
+        S1 --> S2
+        S2 --> S3
+    end
+
+    RAW[("Amazon S3<br/>Raw Bucket<br/>CSV · 원시 데이터")]
+    PROC[("Amazon S3<br/>Processed Bucket<br/>Parquet · 정제 데이터")]
+    DDB[("Amazon DynamoDB<br/>stock-pipeline-analysis<br/>초고속 NoSQL 조회")]
+
+    LM["AWS Lambda<br/>Python 3.12<br/>API Handler"]
+    APIGW["Amazon API Gateway<br/>REST API<br/>GET /analysis/{ticker}"]
+    CLIENT["Client<br/>App / Web / curl"]
+
+    EB -->|StartExecution| SFN
+    BC -->|적재| RAW
+    BR -->|읽기| RAW
+    BR -->|적재| PROC
+    GL -->|읽기| RAW
+    GL -->|적재| PROC
+    SM -->|읽기| PROC
+    SM -->|분석 결과 적재| DDB
+
+    DDB -->|조회| LM
+    LM -->|응답| APIGW
+    APIGW -->|HTTPS| CLIENT
+
+    style EB    fill:#FF9900,color:#fff,stroke:#FF9900
+    style RAW   fill:#569A31,color:#fff,stroke:#569A31
+    style PROC  fill:#569A31,color:#fff,stroke:#569A31
+    style DDB   fill:#4053D6,color:#fff,stroke:#4053D6
+    style LM    fill:#FF9900,color:#fff,stroke:#FF9900
+    style APIGW fill:#A020F0,color:#fff,stroke:#A020F0
+    style CLIENT fill:#232F3E,color:#fff,stroke:#232F3E
+```
+
+#### 데이터 흐름 요약
+
+| 단계 | 서비스 | 입력 | 출력 |
+|---|---|---|---|
+| 트리거 | EventBridge Scheduler | 매일 16:00 KST 크론 | Step Functions 실행 |
+| Step 1 수집 | AWS Batch (Fargate) | 외부 주가 API | S3 Raw (CSV) |
+| Step 2 정제 | AWS Batch + Glue ETL | S3 Raw | S3 Processed (Parquet, 이동평균 포함) |
+| Step 3 분석 | SageMaker Pipeline | S3 Processed | DynamoDB (ML 분석 결과) |
+| API 제공 | Lambda + API Gateway | DynamoDB 조회 | HTTPS JSON 응답 |
+
+#### Scripts 구성
+
+```
+scripts/
+├── 00_config.sh          # 공통 환경변수 및 유틸 함수
+├── 01_iam.sh             # IAM 역할·정책 생성
+├── 02_s3.sh              # S3 버킷 (Raw / Processed / Scripts)
+├── 03_dynamodb.sh        # DynamoDB 테이블 + GSI + TTL
+├── 04_batch.sh           # Batch 컴퓨팅 환경·작업 대기열·작업 정의
+├── 05_glue.sh            # Glue ETL Job (PySpark)
+├── 06_sagemaker.sh       # SageMaker Pipeline
+├── 07_lambda_apigw.sh    # Lambda 함수 + API Gateway
+├── 08_stepfunctions.sh   # Step Functions 상태 머신
+├── 09_eventbridge.sh     # EventBridge 스케줄러
+├── deploy_all.sh         # 전체 배포 (순서대로 실행)
+├── destroy_all.sh        # 전체 삭제 (역순)
+├── lambda/
+│   └── handler.py        # Lambda API 핸들러 소스
+└── step-functions/
+    └── workflow.json     # Step Functions 상태 머신 정의 템플릿
+```
+
+**전체 배포:**
+```bash
+# 기본 (dev 환경)
+./scripts/deploy_all.sh
+
+# prod 환경
+ENV=prod ./scripts/deploy_all.sh prod
+```
+
+---
 
 ### GitHub Actions 배포 파이프라인
 
