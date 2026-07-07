@@ -1,0 +1,3 @@
+{
+  "body": "{\"s3_bucket\":\"replace-with-your-bucket\",\"s3_key\":\"images/sample.png\",\"max_labels\":8,\"min_confidence\":75}"
+}

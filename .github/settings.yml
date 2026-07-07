@@ -1,0 +1,15 @@
+repository:
+  description: "Hands-on AWS serverless examples with Lambda, API Gateway, CI/CD, and AI service integrations in Node.js, Python, and Java"
+  topics:
+    - aws
+    - serverless
+    - aws-lambda
+    - api-gateway
+    - serverless-framework
+    - python
+    - nodejs
+    - java
+    - github-actions
+    - sagemaker
+    - amazon-comprehend
+    - amazon-rekognition

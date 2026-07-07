@@ -4,8 +4,22 @@ provider:
   name: aws
   runtime: python3.12
   region: ap-northeast-2
+  stage: ${opt:stage, 'dev'}
   environment:
     AUTH_TOKEN: edumgt-secret-token
+    AI_DEFAULT_LANGUAGE: ko
+    REKOGNITION_MAX_LABELS: 10
+    REKOGNITION_MIN_CONFIDENCE: 80
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - comprehend:DetectSentiment
+            - comprehend:DetectEntities
+            - comprehend:DetectPiiEntities
+            - rekognition:DetectLabels
+          Resource: "*"
 
 functions:
   hello:
@@ -14,6 +28,24 @@ functions:
       - http:
           path: hello
           method: get
+          cors: true
+
+  aiTextAnalyze:
+    handler: ai_handler.analyze_text
+    description: "Analyze text with Amazon Comprehend"
+    events:
+      - http:
+          path: ai/text/analyze
+          method: post
+          cors: true
+
+  aiImageLabels:
+    handler: ai_handler.detect_image_labels
+    description: "Detect labels with Amazon Rekognition"
+    events:
+      - http:
+          path: ai/image/labels
+          method: post
           cors: true
 
   authorizer:
