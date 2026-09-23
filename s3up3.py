@@ -8,8 +8,15 @@ Lambda 핸들러: s3up3.lambda_handler
     {"action": "download", "key": "hello.txt"}
     {"action": "delete", "key": "hello.txt"}
 
-API Gateway에서 호출할 때는 위 JSON을 요청 body로 보내거나 쿼리 파라미터로
-전달할 수 있다. 모든 S3 요청은 AWS 자격 증명 없이 전송한다.
+REST API 경로:
+    GET /objects                 객체 목록
+    POST /objects                업로드 (JSON body에 key, content_base64)
+    GET /objects/{key}           다운로드 (JSON body에 content_base64 반환)
+    PUT /objects/{key}           갱신 (JSON body에 content_base64)
+    DELETE /objects/{key}        삭제
+    OPTIONS /objects[/{key}]    CORS 사전 요청
+
+직접 호출은 action을 사용한다. 모든 S3 요청은 AWS 자격 증명 없이 전송한다.
 """
 
 import base64
@@ -30,7 +37,12 @@ REGION = "ap-northeast-2"
 def _response(status_code, data):
     return {
         "statusCode": status_code,
-        "headers": {"content-type": "application/json; charset=utf-8"},
+        "headers": {
+            "content-type": "application/json; charset=utf-8",
+            "access-control-allow-origin": "*",
+            "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
+            "access-control-allow-headers": "content-type",
+        },
         "body": json.dumps(data, ensure_ascii=False),
     }
 
@@ -51,6 +63,21 @@ def _params(event):
         params.update(body)
     else:
         params.update(event)
+
+    method = event.get("httpMethod")
+    if method is not None:
+        if not isinstance(method, str):
+            raise ValueError("httpMethod는 문자열이어야 합니다.")
+        method = method.upper()
+        path_key = (event.get("pathParameters") or {}).get("proxy")
+        actions = {"POST": "upload", "PUT": "update", "DELETE": "delete",
+                   "OPTIONS": "options"}
+        if method == "GET":
+            params["action"] = "download" if path_key else "list"
+        else:
+            params["action"] = actions.get(method, "unsupported")
+        if path_key:
+            params["key"] = path_key
     return params
 
 
@@ -65,6 +92,10 @@ def lambda_handler(event, context):
     try:
         params = _params(event)
         action = params.get("action")
+        if action == "options":
+            return _response(200, {"ok": True})
+        if action == "unsupported":
+            return _response(405, {"error": "지원하지 않는 HTTP 메소드입니다."})
         if action not in ("upload", "update", "list", "download", "read", "delete"):
             raise ValueError("action은 upload, list, download, delete 중 하나여야 합니다.")
 
